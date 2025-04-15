@@ -1,0 +1,31 @@
+{
+
+  "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+
+  "editor.formatOnPaste": true,
+
+  "editor.formatOnType": false,
+
+  "editor.formatOnSave": true,
+
+  "editor.formatOnSaveMode": "file",
+
+  "editor.tabSize": 2,
+
+  "editor.insertSpaces": true,
+
+  "editor.detectIndentation": false,
+
+  "files.autoSave": "afterDelay",
+
+  "editor.codeActionsOnSave": {
+
+    "source.fixAll.eslint": "explicit",
+
+    "source.organizeImports": "explicit",
+
+    "editor.formatOnSave": "explicit"
+
+  },
+
+}

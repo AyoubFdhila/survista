@@ -1,0 +1,20 @@
+version: '3.8' 
+
+services:
+  # PostgreSQL Database Service
+  postgres-db:
+    image: postgres:15 
+    container_name: survista-postgres-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-survista_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-survista_password}
+      POSTGRES_DB: ${POSTGRES_DB:-survista_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432" 
+    volumes:
+      - postgres-data:/var/lib/postgresql/data 
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local

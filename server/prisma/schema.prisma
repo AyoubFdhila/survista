@@ -1,0 +1,204 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- Enumerations ---
+
+enum Role {
+  SURVEY_MANAGER
+  PLATFORM_ADMIN
+  PARTICIPANT
+}
+
+enum SurveyStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  RATING_SCALE
+  OPEN_TEXT
+}
+
+enum SentimentLabel {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+}
+
+// --- Models ---
+
+model User {
+  userId       String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String? // Nullable for OAuth-only users
+  name         String  
+  firstName        String?
+  lastName         String?
+  role         Role
+  isActive     Boolean @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  profile              Profile?             @relation("UserProfile")
+  ownedSurveys         Survey[]             @relation("OwnerSurveys")
+  configuredIntegrations ThirdPartyIntegration[] @relation("OwnerIntegrations")
+  submittedResponses   SurveyResponse[]     @relation("SubmitterResponses")
+  refreshTokens        RefreshToken[]
+  // passwordResetTokens PasswordResetToken[] // Add later if needed
+}
+
+model Company {
+  companyId String @id @default(cuid())
+  name      String @unique
+
+  profiles Profile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Profile model is specific to SM Profile
+model Profile {
+  profileId      String @id @default(cuid())
+  companyLogo    String?
+  companyWebsite String?
+  jobTitle       String? // Specific to SM Profile
+  avatarUrl      String? // Specific to SM Profile
+  heardFrom      String? // Specific to SM Profile
+  emailVerified  Boolean @default(false) // Specific to SM Profile
+
+  user      User    @relation("UserProfile", fields: [userId], references: [userId], onDelete: Cascade)
+  userId    String  @unique // Foreign key to User, unique enforces 1-to-1
+
+  company   Company @relation(fields: [companyId], references: [companyId], onDelete: Cascade)
+  companyId String  // Foreign key to Company
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  jti       String   @unique // Unique identifier from the JWT payload
+  userId    String
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Survey {
+  surveyId             String       @id @default(cuid())
+  title                String
+  description          String?
+  status               SurveyStatus @default(DRAFT)
+  createdAt            DateTime     @default(now())
+  requiresAuthentication Boolean      @default(false)
+
+  owner     User   @relation("OwnerSurveys", fields: [ownerId], references: [userId], onDelete: Cascade)
+  ownerId   String
+
+  questions Question[]
+  responses SurveyResponse[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model Question {
+  questionId String       @id @default(cuid())
+  text       String
+  type       QuestionType
+  order      Int
+
+  survey   Survey @relation(fields: [surveyId], references: [surveyId], onDelete: Cascade)
+  surveyId String
+
+  options QuestionOption[]
+  answers Answer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestionOption {
+  optionId String @id @default(cuid())
+  text     String
+  order    Int
+
+  question   Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SurveyResponse {
+  responseId     String   @id @default(cuid())
+  submissionDate DateTime @default(now())
+  isAnonymous    Boolean
+
+  survey   Survey @relation(fields: [surveyId], references: [surveyId], onDelete: Cascade)
+  surveyId String
+
+  submitter   User?   @relation("SubmitterResponses", fields: [submitterId], references: [userId], onDelete: SetNull)
+  submitterId String? // Nullable for anonymity
+
+  answers Answer[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model Answer {
+  answerId String @id @default(cuid())
+  value    String
+
+  response   SurveyResponse @relation(fields: [responseId], references: [responseId], onDelete: Cascade)
+  responseId String
+
+  question   Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId String
+
+  sentimentResult SentimentResult?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SentimentResult {
+  resultId       String         @id @default(cuid())
+  sentimentLabel SentimentLabel
+  score          Float?
+
+  answer   Answer @relation(fields: [answerId], references: [answerId], onDelete: Cascade)
+  answerId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ThirdPartyIntegration {
+  integrationId String @id @default(cuid())
+  serviceType   String
+  configDetails String // Store securely
+
+  owner   User   @relation("OwnerIntegrations", fields: [ownerId], references: [userId], onDelete: Cascade)
+  ownerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// model PasswordResetToken { ... } // Add later
+// ```
+// **Action:** Save this as `server/prisma/schema.prisma`. Run `npx prisma migrate dev --name update-final-schema` and `npx prisma generat
