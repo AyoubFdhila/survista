@@ -22,3 +22,20 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
+// Zod schema with password confirmation validation
+export const resetPasswordSchema = z.object({
+    password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'], // Apply error to confirmPassword field
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
+// Schema for validation
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+});
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

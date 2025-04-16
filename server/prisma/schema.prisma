@@ -54,7 +54,7 @@ model User {
   configuredIntegrations ThirdPartyIntegration[] @relation("OwnerIntegrations")
   submittedResponses   SurveyResponse[]     @relation("SubmitterResponses")
   refreshTokens        RefreshToken[]
-  // passwordResetTokens PasswordResetToken[] // Add later if needed
+  passwordResetTokens   PasswordResetToken[]
 }
 
 model Company {
@@ -96,6 +96,18 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid()) 
+  selector  String   @unique
+  token     String   // Hashed token 
+  expiresAt DateTime                 
+  userId    String                     
+  user      User     @relation(fields: [userId], references: [userId], onDelete: Cascade) 
+  createdAt DateTime @default(now())      
+
+  @@index([userId]) 
 }
 
 model Survey {

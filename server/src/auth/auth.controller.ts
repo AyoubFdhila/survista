@@ -26,6 +26,8 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 // Decorator to mark routes as public
 export const IS_PUBLIC_KEY = 'isPublic';
@@ -176,4 +178,36 @@ export class AuthController {
     res.redirect(`${frontendUrl}/dashboard`); 
   }
   
+  // --- Forgot Password Endpoint ---
+@Public() 
+@Post('forgot-password') 
+@HttpCode(HttpStatus.OK) 
+@ApiOperation({ summary: 'Initiate password reset process' })
+@ApiBody({ type: ForgotPasswordDto, description: 'User email address' })
+@ApiResponse({ status: 200, description: 'If an account exists for the email, a reset link will be sent. Response is the same whether email exists or not.' })
+@ApiResponse({ status: 400, description: 'Validation Error (e.g., invalid email format)' })
+async requestPasswordReset(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+   
+    await this.authService.handleForgotPassword(forgotPasswordDto.email);
+
+    return { message: 'If an account with that email exists, a password reset link has been sent.' };
+  }
+
+
+  // --- ADD Reset Password Endpoint ---
+@Public() 
+@Post('reset-password')
+@HttpCode(HttpStatus.OK) 
+@ApiOperation({ summary: 'Reset user password using token' })
+@ApiBody({ type: ResetPasswordDto })
+@ApiResponse({ status: 200, description: 'Password has been reset successfully.' })
+async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+    await this.authService.handleResetPassword(
+      resetPasswordDto.selector, 
+      resetPasswordDto.token,    
+      resetPasswordDto.password,
+    );
+    return { message: 'Password has been reset successfully.' };
+}
+
 }

@@ -177,14 +177,13 @@ export default function SignupPage() {
               <div className="h-0.5 w-full bg-gray-200 dark:bg-gray-700"></div>
             </div>
 
-            {/* Google Sign-up Button - Optional, based on example */}
+            {/* Google Sign-up Button */}
             <a
-              href="#" // TODO: Replace with actual Google Sign-in functionality if needed
-              onClick={(e) => { e.preventDefault(); alert('Google Sign-up not implemented yet.'); }}
-              className="mb-2 mr-2 inline-flex w-full items-center justify-center rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-gray-900 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700"
+              href={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/api'}/auth/google`} 
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* ... SVG code ... */}
+                {/* Google SVG code... */}
                 <g clipPath="url(#clip0_13183_10121)">
                   <path d="M20.3081 10.2303C20.3081 9.55056 20.253 8.86711 20.1354 8.19836H10.7031V12.0492H16.1046C15.8804 13.2911 15.1602 14.3898 14.1057 15.0879V17.5866H17.3282C19.2205 15.8449 20.3081 13.2728 20.3081 10.2303Z" fill="#3F83F8"/>
                   <path d="M10.7019 20.0006C13.3989 20.0006 15.6734 19.1151 17.3306 17.5865L14.1081 15.0879C13.2115 15.6979 12.0541 16.0433 10.7056 16.0433C8.09669 16.0433 5.88468 14.2832 5.091 11.9169H1.76562V14.4927C3.46322 17.8695 6.92087 20.0006 10.7019 20.0006V20.0006Z" fill="#34A853"/>
@@ -193,7 +192,7 @@ export default function SignupPage() {
                 </g>
                 <defs><clipPath id="clip0_13183_10121"><rect width="20" height="20" fill="white" transform="translate(0.5)"/></clipPath></defs>
               </svg>
-              Sign up with Google
+              Sign in with Google
             </a>
 
             {/* Checkboxes Area */}
