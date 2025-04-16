@@ -1,17 +1,20 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
-  Logger, 
+  Logger,
   UnauthorizedException
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config'; 
-import { JwtService } from '@nestjs/jwt'; 
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '@prisma/client';
-import * as argon2 from 'argon2'; 
+import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 import * as cuid from 'cuid';
-import { Response } from 'express'; 
-import { PrismaService } from '../prisma/prisma.service'; 
+import { Response } from 'express';
+import { MailService } from 'src/mail/mail.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 
@@ -28,6 +31,7 @@ export class AuthService {
     private jwtService: JwtService, 
     private configService: ConfigService, 
     private prisma: PrismaService, 
+    private readonly mailService: MailService,
     
   ) {}
 
@@ -254,5 +258,128 @@ export class AuthService {
       throw new InternalServerErrorException(`Failed to validate or create OAuth user.`);
     }
   }
+
+  async handleForgotPassword(email: string): Promise<void> {
+    this.logger.log(`Forgot password request received for email: ${email}`);
+    const user = await this.usersService.findUserByEmail(email);
+
+    // Check if user exists and has a passwordHash
+    if (!user || !user.passwordHash) { 
+      this.logger.warn(`Forgot password requested for non-existent or OAuth user: ${email}. Returning silently.`);
+      return;
+    }
+
+    // Generate selector (public, unique identifier for lookup)
+    const selector = randomBytes(16).toString('hex');
+    // Generate verifier token (secret part)
+    const plainToken = randomBytes(32).toString('hex');
+    let hashedToken: string; 
+
+    try {
+      hashedToken = await argon2.hash(plainToken);
+    } catch (hashError) {
+      this.logger.error(`Failed to hash password reset token for ${user.email}: ${hashError.message}`, hashError.stack);
+      throw new InternalServerErrorException('Error processing password reset request.');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    try {
+      await this.prisma.passwordResetToken.deleteMany({ where: { userId: user.userId } });
+
+      await this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.userId,
+          selector: selector, 
+          token: hashedToken, 
+          expiresAt: expiresAt,
+        },
+      });
+      this.logger.log(`Password reset token (selector: ${selector}) stored for user: ${user.email}`);
+
+      // --- Send Email with BOTH selector and plainToken ---
+      await this.mailService.sendPasswordResetEmail(user.email, selector, plainToken); 
+
+    } catch (error) {
+       this.logger.error(`Failed DB operation or email sending for password reset (${user.email}): ${error.message}`, error.stack);
+    }
+} 
+
+  // --- ADD Reset Password Method ---
+async handleResetPassword(selector: string, token: string, newPassword: string): Promise<void> {
+    this.logger.log(`Attempting password reset with selector: ${selector}`);
+
+    let passwordResetRecord;
+    let user: User | null = null; 
+
+    try {
+        // --- Find token record using the UNIQUE SELECTOR ---
+        passwordResetRecord = await this.prisma.passwordResetToken.findUnique({
+            where: { selector: selector },
+        });
+
+        if (!passwordResetRecord) { /* ... handle not found ... */ throw new BadRequestException('Invalid or expired password reset link.'); }
+        if (passwordResetRecord.expiresAt < new Date()) { /* ... handle expired ... */ throw new BadRequestException('Invalid or expired password reset link.'); }
+
+        // --- Verify the plain token against the stored hash ---
+        const isTokenValid = await argon2.verify(passwordResetRecord.token, token);
+        if (!isTokenValid) {
+            this.logger.warn(`Password reset failed: Token verification failed (ID: ${passwordResetRecord.id}).`);
+            throw new BadRequestException('Invalid or expired password reset link.');
+        }
+
+        // --- Token is valid, fetch user details ---
+        user = await this.usersService.findUserById(passwordResetRecord.userId);
+        if (!user) {
+            this.logger.error(`User not found (ID: ${passwordResetRecord.userId}) for valid reset token (ID: ${passwordResetRecord.id})`);
+            throw new InternalServerErrorException('Associated user not found.');
+        }
+
+    } catch (error) {
+        if (!(error instanceof BadRequestException || error instanceof InternalServerErrorException)) {
+            this.logger.error(`Error validating password reset token: ${error.message}`, error.stack);
+        }
+        // Re-throw known or generic error
+        if (error instanceof BadRequestException || error instanceof UnauthorizedException || error instanceof InternalServerErrorException) throw error;
+        throw new InternalServerErrorException('Could not process password reset token.');
+    }
+
+    // --- Token is valid, user exists, proceed with password update and token deletion ---
+    let newHashedPassword: string;
+    try {
+        newHashedPassword = await argon2.hash(newPassword);
+    } catch (hashError) {
+        this.logger.error(`Failed to hash new password for user ${passwordResetRecord.userId}: ${hashError.message}`, hashError.stack);
+        throw new InternalServerErrorException('Failed to secure new password.');
+     }
+
+    try {
+        // Update User password
+        await this.prisma.user.update({
+            where: { userId: passwordResetRecord.userId },
+            data: { passwordHash: newHashedPassword },
+        });
+        this.logger.log(`Password successfully reset for user ${passwordResetRecord.userId}.`);
+
+        // Delete Used Token
+        await this.prisma.passwordResetToken.delete({
+            where: { id: passwordResetRecord.id }, 
+        });
+        this.logger.log(`Password reset token deleted (ID: ${passwordResetRecord.id}).`);
+
+        // --- Send Confirmation Email ---
+        // Ensure user was fetched successfully before trying to access email
+        if (user && user.email) {
+             await this.mailService.sendPasswordResetConfirmationEmail(user.email);
+        } else {
+             this.logger.error(`Could not send password reset confirmation: user email missing for user ID ${passwordResetRecord.userId}`);
+        }
+
+    } catch (error) {
+        this.logger.error(`Failed final steps (update password, delete token, or send confirmation) for user ${passwordResetRecord.userId}: ${error.message}`, error.stack);
+        throw new InternalServerErrorException('Could not finalize password reset.');
+    }
+  } 
 
 }

@@ -9,6 +9,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { PrismaModule } from 'src/prisma/prisma.module'; 
 import { GoogleStrategy } from './strategies/google.strategy';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
     ConfigModule,
     PrismaModule, 
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [
