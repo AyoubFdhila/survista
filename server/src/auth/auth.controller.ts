@@ -29,10 +29,7 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Throttle } from '@nestjs/throttler';
-
-// Decorator to mark routes as public
-export const IS_PUBLIC_KEY = 'isPublic';
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+import { Public } from 'src/decorators/roles.decorator';
 
 @ApiTags('Authentication')
 @Controller('auth')
