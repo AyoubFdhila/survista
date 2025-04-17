@@ -4,6 +4,7 @@ import { Prisma, User, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { AuthResponseUser } from 'src/auth/dto/auth-response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AdminUserViewDto } from './dto/admin-user-view.dto';
 
 interface CreateUserInput {
   email: string;
@@ -76,7 +77,7 @@ export class UsersService {
 
 
     // --- find all users (for Admin) ---
-  async findAllUsers(): Promise<AuthResponseUser[]> {
+  async findAllUsers(): Promise<AdminUserViewDto[]> {
     this.logger.log('Fetching all users request.');
     try {
       const users = await this.prisma.user.findMany({
@@ -84,6 +85,8 @@ export class UsersService {
           userId: true,
           email: true,
           name: true,
+          firstName: true, // <-- Add this
+          lastName: true,  // <-- Add this
           role: true,
           isActive: true,  
           lastLogin: true,
@@ -126,6 +129,8 @@ export class UsersService {
           userId: true,
           email: true,
           name: true,
+          firstName: true, // <-- Add this
+          lastName: true,  // <-- Add this
           role: true,
           isActive: true,
           lastLogin: true,
