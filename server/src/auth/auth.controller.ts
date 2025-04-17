@@ -28,6 +28,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Throttle } from '@nestjs/throttler';
 
 // Decorator to mark routes as public
 export const IS_PUBLIC_KEY = 'isPublic';
@@ -66,6 +67,7 @@ export class AuthController {
   // --- Public Login Endpoint ---
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Log in a user with email and password' })
   @ApiBody({ type: LoginUserDto })
@@ -115,6 +117,7 @@ export class AuthController {
   }
 
   // --- Refresh Token Endpoint ---
+  // @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
   @HttpCode(HttpStatus.OK)

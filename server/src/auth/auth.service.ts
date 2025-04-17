@@ -85,10 +85,10 @@ export class AuthService {
     const isProduction = this.configService.get('NODE_ENV') === 'production';
 
     response.cookie('access_token', accessToken, {
-      httpOnly: true, secure: isProduction, sameSite: 'strict', maxAge: accessCookieAge, path: '/',
+      httpOnly: true, secure: isProduction, sameSite: 'lax', maxAge: accessCookieAge, path: '/',
     });
     response.cookie('refresh_token', refreshToken, {
-      httpOnly: true, secure: isProduction, sameSite: 'strict', maxAge: refreshCookieAge, path: '/',
+      httpOnly: true, secure: isProduction, sameSite: 'lax', maxAge: refreshCookieAge, path: '/',
     });
     this.logger.log(`Auth cookies set.`); 
 }
@@ -162,7 +162,7 @@ export class AuthService {
     const cookieOptions = {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict' as const, 
+      sameSite: 'lax' as const, 
       path: '/',
     };
 
