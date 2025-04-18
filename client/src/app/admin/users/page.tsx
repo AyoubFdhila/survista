@@ -208,7 +208,7 @@ export default function AdminUsersPage() {
            </Alert>
       )}
       {/* Add Button Placeholder */}
-      {/* <div className="mb-4"><Button size="sm">Add New User</Button></div> */}
+      <div className="mb-4"><Button size="sm">Add New User</Button></div>
 
       <div className="overflow-x-auto">
         <Table hoverable={true}>
@@ -258,12 +258,12 @@ export default function AdminUsersPage() {
         <ModalHeader />
         <ModalBody>
           <div className="text-center">
-            <HiOutlineExclamationCircle className="mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-gray-200" />
+            <HiOutlineExclamationCircle className="mx-auto mb-4 h-14 w-14 text-gray-400 dark:text-red-600" />
             <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
               Are you sure you want to delete the user "{userToDelete?.name}"?
             </h3>
             <div className="flex justify-center gap-4">
-              <Button color="failure" onClick={confirmDeletion}>{"Yes, I'm sure"}</Button>
+              <Button color="red" onClick={confirmDeletion}>{"Yes, I'm sure"}</Button>
               <Button color="gray" onClick={() => setShowConfirmModal(false)}>No, cancel</Button>
             </div>
           </div>
@@ -277,6 +277,14 @@ export default function AdminUsersPage() {
           <ModalHeader>Edit User: {userToEdit?.name ?? '...'}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
+              {/* Name Input */}
+              <div>
+                <div className="mb-2 block">
+                  <Label htmlFor="edit-name" >Name</Label>
+                  </div>
+                <TextInput id="edit-name" placeholder="User's full name" required color={editErrors.name ? 'failure' : 'gray'} {...registerEdit('name')} />
+                {editErrors.name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{editErrors.name.message}</p>}
+              </div>
               {/* Name Input */}
               <div>
                 <div className="mb-2 block">
