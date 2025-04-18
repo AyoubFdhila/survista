@@ -201,7 +201,7 @@ export default function SignupPage() {
               {/* Terms Checkbox */}
               <div className="flex items-start">
                 <div className="flex h-5 items-center">
-                  <Checkbox id="terms" required />
+                  <Checkbox id="terms" />
                 </div>
                 <div className="ml-3 text-sm">
                   <Label htmlFor="terms" className="text-gray-500 dark:text-gray-300">
