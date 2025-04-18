@@ -1,7 +1,6 @@
-// server/src/users/dto/admin-user-view.dto.ts
 import { Role } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator'; // Import necessary validators if extending validation
+import { IsOptional, IsString } from 'class-validator';
 
 export class AdminUserViewDto {
   @ApiProperty({ example: 'clp2a0r1x0000c8vwg8f9h7k3', description: 'Unique user ID' })
@@ -11,19 +10,17 @@ export class AdminUserViewDto {
   email: string;
 
   @ApiProperty({ example: 'Admin User', description: 'User full display name' })
-  name: string; // Keep the main name field
+  name: string; 
 
-  // --- ADD THESE FIELDS ---
   @ApiPropertyOptional({ example: 'Admin', description: "User's first name", nullable: true })
-  @IsOptional() // Mark as optional in DTO if they can be null/missing
+  @IsOptional() 
   @IsString()
-  firstName?: string | null; // Match Prisma type String?
+  firstName?: string | null; 
 
   @ApiPropertyOptional({ example: 'User', description: "User's last name", nullable: true })
   @IsOptional()
   @IsString()
-  lastName?: string | null; // Match Prisma type String?
-  // --- END OF ADDED FIELDS ---
+  lastName?: string | null;
 
   @ApiProperty({ enum: Role, example: Role.PLATFORM_ADMIN, description: 'User role' })
   role: Role;

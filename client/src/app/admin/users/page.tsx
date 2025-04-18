@@ -1,55 +1,42 @@
-// client/src/app/admin/users/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import apiClient from '@/lib/apiClient'; // Ensure path is correct
-import { AdminUserView } from '@/lib/type'; // Ensure path & export are correct
-import { Role } from '@/lib/type'; // Ensure path & export are correct
-import { useForm, Controller } from 'react-hook-form';
+import apiClient from '@/lib/apiClient';
+import { AdminUserView, Role } from '@/lib/type';
+import { UpdateUserFormData, updateUserSchema } from '@/lib/validators/user';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-// Import necessary Flowbite and React Icons components
 import {
-  Table,
-  TableHead,
-  TableHeadCell,
-  TableBody,
-  TableRow,
-  TableCell,
-  Spinner,
-  Button,
-  Badge,
   Alert,
+  Badge,
+  Button,
+  Label,
   Modal,
-  ModalHeader,
   ModalBody,
   ModalFooter,
-  Label,
-  TextInput,
+  ModalHeader,
   Select,
-  ToggleSwitch, // Use ToggleSwitch for boolean
-  // ButtonGroup // Import if you prefer using ButtonGroup component
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeadCell,
+  TableRow,
+  TextInput,
+  ToggleSwitch,
 } from 'flowbite-react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
-    HiOutlinePencilAlt,
-    HiOutlineTrash,
-    HiExclamationCircle,
-    HiOutlineExclamationCircle
+  HiExclamationCircle,
+  HiOutlineExclamationCircle,
+  HiOutlinePencilAlt,
+  HiOutlineTrash
 } from 'react-icons/hi';
-
-// Zod Schema for the Edit Form (all fields optional)
-const updateUserSchema = z.object({
-  name: z.string().min(1, "Name cannot be empty").optional(),
-  role: z.nativeEnum(Role).optional(), // Use nativeEnum for Prisma enums
-  isActive: z.boolean().optional(),
-});
-type UpdateUserFormData = z.infer<typeof updateUserSchema>;
-
 
 export default function AdminUsersPage() {
   // State for users list, loading status, errors, and action status
   const [users, setUsers] = useState<AdminUserView[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Loading the list initially
+  const [isLoading, setIsLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null); // Track which user row is deleting
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Delete Modal visibility
@@ -76,7 +63,7 @@ export default function AdminUsersPage() {
       resetEditForm({
         name: userToEdit.name,
         role: userToEdit.role,
-        isActive: userToEdit.isActive ?? true, // Default isActive if needed, check your AdminUserView type
+        isActive: userToEdit.isActive ?? true, 
       });
     } else {
         // Reset form to defaults when modal closes
@@ -92,7 +79,6 @@ export default function AdminUsersPage() {
       setError(null);
       try {
         const response = await apiClient.get<AdminUserView[]>('/users');
-        // Add isActive to the type if it comes from backend, otherwise handle default
         const usersWithStatus = response.data.map(u => ({ ...u, isActive: u.isActive ?? true }));
         setUsers(usersWithStatus);
       } catch (err: any) {
@@ -103,14 +89,14 @@ export default function AdminUsersPage() {
       }
     };
     fetchUsers();
-  }, []); // Runs once on mount
+  }, []); 
 
   // --- Helper Functions ---
   const getRoleColor = (role: Role) => {
     switch (role) {
       case Role.PLATFORM_ADMIN: return 'failure';
       case Role.SURVEY_MANAGER: return 'info';
-      case Role.PARTICIPANT: return 'gray';
+      case Role.PARTICIPANT: return 'yellow';
       default: return 'gray';
     }
   };
@@ -140,7 +126,7 @@ export default function AdminUsersPage() {
 
   // --- Edit Logic ---
   const handleEditUserClick = (user: AdminUserView) => {
-    setError(null); // Clear errors when opening edit modal
+    setError(null); // Clear any previous errors
     setUserToEdit(user);
     setShowEditModal(true);
   };
@@ -149,16 +135,6 @@ export default function AdminUsersPage() {
       if (!userToEdit) return;
       setIsSavingEdit(true);
       setError(null);
-
-      // Prepare only changed fields (optional, Prisma handles partial update well)
-      // const changedData: Partial<UpdateUserFormData> = {};
-      // if (data.name !== userToEdit.name) changedData.name = data.name;
-      // if (data.role !== userToEdit.role) changedData.role = data.role;
-      // if (data.isActive !== userToEdit.isActive) changedData.isActive = data.isActive;
-      // if (Object.keys(changedData).length === 0) {
-      //     // No changes detected
-      //     setShowEditModal(false); setUserToEdit(null); setIsSavingEdit(false); return;
-      // }
 
       try {
           const response = await apiClient.patch<AdminUserView>(`/users/${userToEdit.userId}`, data); // Send validated data
@@ -174,8 +150,7 @@ export default function AdminUsersPage() {
 
       } catch (err: any) {
           console.error(`Failed to update user ${userToEdit.userId}:`, err);
-          setError(`Update failed: ${err.response?.data?.message || err.message}`); // Show error in main page alert for now
-          // Ideally show error within the modal
+          setError(`Update failed: ${err.response?.data?.message || err.message}`); 
       } finally {
           setIsSavingEdit(false);
       }
@@ -214,20 +189,24 @@ export default function AdminUsersPage() {
         <Table hoverable={true}>
           <TableHead>
             <TableHeadCell>Name</TableHeadCell>
+            <TableHeadCell>FirstName</TableHeadCell>
+            <TableHeadCell>LastName</TableHeadCell>
             <TableHeadCell>Email</TableHeadCell>
             <TableHeadCell>Role</TableHeadCell>
-            <TableHeadCell>Status</TableHeadCell> {/* Added Status */}
+            <TableHeadCell>Status</TableHeadCell> 
             <TableHeadCell>
               <span className="sr-only">Actions</span>
             </TableHeadCell>
           </TableHead>
           <TableBody className="divide-y">
             {users.length === 0 && !isLoading && (
-               <TableRow><TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-4">No users found.</TableCell></TableRow>
+               <TableRow><TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-4">No users found.</TableCell></TableRow>
             )}
             {users.map((user) => (
               <TableRow key={user.userId} className="bg-white dark:border-gray-700 dark:bg-gray-800">
                 <TableCell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">{user.name}</TableCell>
+                <TableCell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">{user.firstName}</TableCell>
+                <TableCell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">{user.lastName}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell><Badge color={getRoleColor(user.role)} size="sm">{user.role}</Badge></TableCell>
                 <TableCell> {/* Added Status Cell */}
@@ -282,16 +261,24 @@ export default function AdminUsersPage() {
                 <div className="mb-2 block">
                   <Label htmlFor="edit-name" >Name</Label>
                   </div>
-                <TextInput id="edit-name" placeholder="User's full name" required color={editErrors.name ? 'failure' : 'gray'} {...registerEdit('name')} />
+                <TextInput id="edit-name" placeholder="full name" color={editErrors.name ? 'failure' : 'gray'} {...registerEdit('name')} />
                 {editErrors.name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{editErrors.name.message}</p>}
               </div>
-              {/* Name Input */}
+              {/* FirstName Input */}
               <div>
                 <div className="mb-2 block">
-                  <Label htmlFor="edit-name" >Name</Label>
+                  <Label htmlFor="edit-name" >FirstName</Label>
                   </div>
-                <TextInput id="edit-name" placeholder="User's full name" required color={editErrors.name ? 'failure' : 'gray'} {...registerEdit('name')} />
-                {editErrors.name && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{editErrors.name.message}</p>}
+                <TextInput id="edit-firstName" placeholder="first name"  color={editErrors.firstName ? 'failure' : 'gray'} {...registerEdit('firstName')} />
+                {editErrors.firstName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{editErrors.firstName.message}</p>}
+              </div>
+              {/* lastName Input */}
+              <div>
+                <div className="mb-2 block">
+                  <Label htmlFor="edit-lastName" >LastName</Label>
+                  </div>
+                <TextInput id="edit-lastName" placeholder="last name"  color={editErrors.lastName ? 'failure' : 'gray'} {...registerEdit('lastName')} />
+                {editErrors.lastName && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{editErrors.lastName.message}</p>}
               </div>
               {/* Role Select */}
               <div>

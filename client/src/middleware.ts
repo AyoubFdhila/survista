@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // 1. Specify protected and CORRECT auth routes
-const protectedRoutes = ['/dashboard', '/surveys', '/settings', '/admin']; // Add any other routes that need auth
+const protectedRoutes = ['/dashboard', '/surveys', '/settings', '/admin']; 
 const authRoutes = ['/auth/login', '/auth/signup']; 
 
 export function middleware(request: NextRequest) {

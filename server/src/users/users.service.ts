@@ -85,8 +85,8 @@ export class UsersService {
           userId: true,
           email: true,
           name: true,
-          firstName: true, // <-- Add this
-          lastName: true,  // <-- Add this
+          firstName: true, 
+          lastName: true,  
           role: true,
           isActive: true,  
           lastLogin: true,
@@ -122,6 +122,8 @@ export class UsersService {
         where: { userId: userId },
         data: {
           name: data.name, 
+          firstName: data.firstName,
+          lastName: data.lastName,
           role: data.role, 
           isActive: data.isActive, 
         },
@@ -129,8 +131,8 @@ export class UsersService {
           userId: true,
           email: true,
           name: true,
-          firstName: true, // <-- Add this
-          lastName: true,  // <-- Add this
+          firstName: true, 
+          lastName: true,  
           role: true,
           isActive: true,
           lastLogin: true,
