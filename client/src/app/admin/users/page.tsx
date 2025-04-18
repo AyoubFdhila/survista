@@ -188,6 +188,7 @@ export default function AdminUsersPage() {
       <div className="overflow-x-auto">
         <Table hoverable={true}>
           <TableHead>
+            <TableRow>
             <TableHeadCell>Name</TableHeadCell>
             <TableHeadCell>FirstName</TableHeadCell>
             <TableHeadCell>LastName</TableHeadCell>
@@ -197,6 +198,7 @@ export default function AdminUsersPage() {
             <TableHeadCell>
               <span className="sr-only">Actions</span>
             </TableHeadCell>
+            </TableRow>
           </TableHead>
           <TableBody className="divide-y">
             {users.length === 0 && !isLoading && (
