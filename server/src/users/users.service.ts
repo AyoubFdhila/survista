@@ -6,6 +6,7 @@ import { AuthResponseUser } from 'src/auth/dto/auth-response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AdminUserViewDto } from './dto/admin-user-view.dto';
 import { UpdateMyDetailsDto } from './dto/update-my-details.dto';
+import { CreateUserByAdminDto } from './dto/create-user-by-admin.dto';
 
 interface CreateUserInput {
   email: string;
@@ -95,7 +96,7 @@ export class UsersService {
           updatedAt: true,
         },
         orderBy: {
-          createdAt: 'asc',
+          createdAt: 'desc', // Order by creation date, most recent first
         },
       });
 
@@ -206,6 +207,58 @@ export class UsersService {
         throw new NotFoundException(`User with ID ${userId} not found.`);
       }
       throw new InternalServerErrorException('Could not update user details.');
+    }
+  }
+
+  // --- NEW: createUserByAdmin Method (Aligned with existing style) ---
+  async createUserByAdmin(
+    createUserDto: CreateUserByAdminDto,
+  ): Promise<AdminUserViewDto> {
+
+    const existingUser = await this.findUserByEmail(createUserDto.email); 
+    if (existingUser) {
+      this.logger.warn(
+        `Admin user creation failed: Email ${createUserDto.email} already exists.`,
+      );
+      throw new ConflictException('Email address is already in use.');
+    }
+
+    let hashedPassword: string;
+    hashedPassword = await argon2.hash(createUserDto.password);
+
+    try {
+      const newUser = await this.prisma.user.create({
+        data: {
+          email: createUserDto.email.toLowerCase(),
+          name: createUserDto.name,
+          passwordHash: hashedPassword,
+          role: createUserDto.role,
+          isActive: true, 
+        },
+        select: {
+          userId: true,
+          email: true,
+          name: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(
+        `Admin successfully created user: ${newUser.email} (ID: ${newUser.userId})`,
+      );
+      return newUser;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create user ${createUserDto.email} in DB during admin creation: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not create user.');
     }
   }
   

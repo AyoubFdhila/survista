@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, InternalServerErrorException, NotFoundException, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/decorators/roles.decorator';
@@ -7,6 +7,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AdminUserViewDto } from './dto/admin-user-view.dto';
+import { CreateUserByAdminDto } from './dto/create-user-by-admin.dto';
 
 @ApiTags('Users (Admin)')
 @Controller('users')      
@@ -67,5 +69,29 @@ export class UsersController {
     async remove(@Param('id') id: string): Promise<void> {
         await this.usersService.deleteUser(id);
     }
+
+  // --- NEW: POST /api/users endpoint ---
+  @Post()
+  @Roles(Role.PLATFORM_ADMIN) // Restrict to admins
+  @HttpCode(HttpStatus.CREATED) // Set success status code to 201
+  @ApiOperation({ summary: 'Admin: Create a new user' })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully.',
+    type: AdminUserViewDto, // Specify return type for Swagger
+  })
+  async createUserByAdmin(
+    @Body() createUserDto: CreateUserByAdminDto, // Validate body against DTO
+  ): Promise<AdminUserViewDto> {
+    try {
+      return await this.usersService.createUserByAdmin(createUserDto);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(error.message);
+      } else {
+        throw new InternalServerErrorException('Failed to create user.');
+      }
+    }
+  }
   
 }

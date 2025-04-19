@@ -18,3 +18,17 @@ export const updateMyDetailsSchema = z.object({
   lastName: z.string().min(1, "Last name cannot be empty").optional().or(z.literal('')).nullable(),
 });
 export type UpdateMyDetailsFormData = z.infer<typeof updateMyDetailsSchema>;
+
+
+export const createUserSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters long'),
+  role: z.nativeEnum(Role, {
+    errorMap: () => ({ message: 'Role is required' }), 
+  }),
+});
+
+export type CreateUserInput = z.infer<typeof createUserSchema>;

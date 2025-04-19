@@ -10,23 +10,30 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 // Import Flowbite components
+import { Role } from "@/lib/type";
 import { Alert, Button, Checkbox, Label, Spinner, TextInput } from "flowbite-react";
 import { HiCheckCircle, HiInformationCircle } from 'react-icons/hi';
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuthStore();
   const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const { setUser, isAuthenticated } = useAuthStore();
 
-  useEffect(() => {
-    // If the user is authenticated (state is true), redirect away from login
-    if (isAuthenticated) {
-      console.log("Login Page: User already authenticated, redirecting to dashboard.");
-      router.replace('/dashboard');
-    }
 
-  }, [isAuthenticated, router]);
+useEffect(() => {
+  // If the user becomes authenticated while on this page, redirect based on role
+  if (isAuthenticated && user) { 
+    console.log(`Login Page: User authenticated with role ${user.role}. Redirecting...`);
+    if (user.role === Role.PLATFORM_ADMIN) {
+      router.replace('/admin/users'); 
+    } else {
+      router.replace('/dashboard'); 
+    }
+  }
+  // Dependency array: run when isAuthenticated or user object changes
+}, [isAuthenticated, user, router]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -36,24 +43,38 @@ export default function LoginPage() {
     },
   });
 
-  // Handle form submission
-  async function onSubmit(values: LoginFormData) {
-    setIsLoading(true);
-    setAlertMessage(null);
-    try {
-      const response = await apiClient.post('/auth/login', values);
-      const userData = response.data;
-      setUser(userData);
+  // Updated onSubmit function:
+async function onSubmit(values: LoginFormData) {
+  setIsLoading(true);
+  setAlertMessage(null);
+  try {
+    const response = await apiClient.post('/auth/login', values);
+    const userData = response.data; // Contains user data including role
 
-      setAlertMessage({ type: 'success', message: 'Login Successful! Redirecting...' });
+    // 1. Update the Zustand store
+    setUser(userData);
 
-    } catch (error: any) {
-      setIsLoading(false);
-      console.error("Login failed:", error);
-      const errorMessage = error.response?.data?.message || "Invalid credentials or server error.";
-      setAlertMessage({ type: 'error', message: errorMessage });
-    }
+    // 2. Show the success message
+    setAlertMessage({ type: 'success', message: 'Login Successful! Redirecting...' });
+
+    // 3. Wait briefly, then redirect based on role
+    setTimeout(() => {
+      if (userData.role === Role.PLATFORM_ADMIN) {
+        router.push('/admin/users'); // Redirect admin
+      } else {
+        router.push('/dashboard'); // Redirect other authenticated users
+      }
+      // No need to setIsLoading(false) here as the component will unmount
+    }, 1500); // Wait 1.5 seconds (1500ms) before redirecting
+
+  } catch (error: any) {
+    // Only set loading to false if there's an error
+    setIsLoading(false);
+    console.error("Login failed:", error);
+    const errorMessage = error.response?.data?.message || "Invalid credentials";
+    setAlertMessage({ type: 'error', message: errorMessage });
   }
+}
 
   // Helper function to display validation errors below input
   const renderError = (fieldName: keyof LoginFormData) => {
