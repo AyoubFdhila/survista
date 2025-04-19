@@ -86,11 +86,6 @@ The backend API documentation (Swagger UI) is automatically generated and availa
     * Phase 7: Backend & Frontend Refresh Token Logic
     * Phase 8: Backend & Frontend Google OAuth 2.0
     * Phase 9: Backend & Frontend Password Reset
-
-* **Next Up:**
     * Phase 10: Backend & Frontend - RoleBased Access Control (RBAC) - User CRUD (Admin) 
-    
-* **Pending:**
     * Phase 11: Backend & Frontend - Profile Management 
     * Phase 12: Final Documentation & Testing
-
