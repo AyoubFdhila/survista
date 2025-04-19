@@ -5,6 +5,7 @@ import * as argon2 from 'argon2';
 import { AuthResponseUser } from 'src/auth/dto/auth-response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AdminUserViewDto } from './dto/admin-user-view.dto';
+import { UpdateMyDetailsDto } from './dto/update-my-details.dto';
 
 interface CreateUserInput {
   email: string;
@@ -171,6 +172,40 @@ export class UsersService {
     } catch (error) {
       this.logger.error(`Failed to delete user ${userId}: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Could not delete user.');
+    }
+  }
+
+  // --- ADD Method for user to update their own details ---
+  async updateMyDetails(userId: string, data: UpdateMyDetailsDto): Promise<AuthResponseUser> {
+    this.logger.log(`Attempting to update details for user ID: ${userId}`);
+
+    try {
+      
+      const updatedUser = await this.prisma.user.update({
+        where: { userId: userId },
+        data: {
+          name: data.name,
+          firstName: data.firstName,
+          lastName: data.lastName,
+        },
+        select: { 
+          userId: true,
+          email: true,
+          name: true,
+          role: true,
+          firstName: true,
+          lastName: true,},
+      });
+
+      this.logger.log(`Successfully updated details for user ID: ${userId}`);
+      return updatedUser;
+
+    } catch (error) {
+      this.logger.error(`Failed to update details for user ${userId}: ${error.message}`, error.stack);
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`User with ID ${userId} not found.`);
+      }
+      throw new InternalServerErrorException('Could not update user details.');
     }
   }
   
