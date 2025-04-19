@@ -7,6 +7,7 @@ import {
   HttpStatus,
   InternalServerErrorException,
   Logger,
+  Patch,
   Post,
   Req,
   Res,
@@ -30,6 +31,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/decorators/roles.decorator';
+import { UpdateMyDetailsDto } from 'src/users/dto/update-my-details.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -93,6 +95,22 @@ export class AuthController {
   getProfile(@Req() req: Request): AuthResponseUser {
     const user = req.user as AuthResponseUser; 
     return user;
+  }
+
+  // --- Endpoint for User to Update Own Details ---
+  @Patch('me') 
+  @UseGuards(JwtAuthGuard) 
+  @ApiOperation({ summary: 'Update authenticated user profile details (name, etc.)' })
+  @ApiCookieAuth() 
+  @ApiBody({ type: UpdateMyDetailsDto })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully.', type: AuthResponseUser })
+  async updateMyDetails(
+    @Req() req: Request, 
+    @Body() updateMyDetailsDto: UpdateMyDetailsDto 
+  ): Promise<AuthResponseUser> {
+    const userId = (req.user as { userId: string }).userId;
+    const updatedUser = await this.usersService.updateMyDetails(userId, updateMyDetailsDto);
+    return updatedUser;
   }
 
   // --- /logout Endpoint ---
