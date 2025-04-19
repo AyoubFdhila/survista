@@ -5,40 +5,31 @@ import { useRouter } from 'next/navigation';
 import { Spinner } from 'flowbite-react';
 
 import { useAuthStore } from '@/store/authStore';
-import { Role } from '@/lib/type';   
+import { Role } from '@/lib/type';
 
-/**
- * Protects everything under /admin.
- * – Shows a full‑page spinner while the session is still resolving.
- * – Lets through only users whose role === PLATFORM_ADMIN.
- * – Redirects others (or unauthenticated visitors) inside a useEffect.
- */
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  /* --- read store state --- */
-  const user = useAuthStore(state => state.user);
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const user            = useAuthStore(s => s.user);
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const isAuthReady     = useAuthStore(s => s.isAuthReady);  
 
   const router = useRouter();
 
   /* --- redirect logic --- */
   useEffect(() => {
-    // still loading (no info yet) → do nothing, just keep spinner
-    if (user === null && !isAuthenticated) return;
+    if (!isAuthReady) return;               
 
-    // unauthenticated → login
-    if (!isAuthenticated) {
+    if (!isAuthenticated) {                 
       router.replace('/auth/login');
       return;
     }
 
-    // authenticated but not an admin → dashboard
     if (user && user.role !== Role.PLATFORM_ADMIN) {
-      router.replace('/dashboard');
+      router.replace('/dashboard');         
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthReady, isAuthenticated, user, router]);
 
-  /* --- loading UI while session check runs --- */
-  if (user === null && !isAuthenticated) {
+  /* --- loading UI while auth state still unknown --- */
+  if (!isAuthReady) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Spinner size="xl" />
@@ -46,7 +37,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  /* --- authorised but wrong role: effect will redirect; render nothing --- */
+  /* --- authorised but wrong role --- */
   if (isAuthenticated && user?.role !== Role.PLATFORM_ADMIN) {
     return null;
   }
